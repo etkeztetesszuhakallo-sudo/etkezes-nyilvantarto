@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étkezés Nyilvántartó Rendszer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+            .card-shadow { box-shadow: none !important; border: 1px solid #ccc !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col relative">
+
+    <!-- JELSZÓ ÉS FELHASZNÁLÓNÉV VÉDŐ MODÁLIS KÉPERNYŐ -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 text-center">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-user-lock"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-1">Étkezés Nyilvántartó</h2>
+            <p class="text-xs text-slate-500 mb-6">Kérjük, adja meg a felhasználónevét és jelszavát!</p>
+            
+            <form onsubmit="checkLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-left text-xs font-semibold text-slate-600 mb-1">Felhasználónév</label>
+                    <input type="text" id="app-username" placeholder="Felhasználónév..." required
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 text-sm">
+                </div>
+                <div>
+                    <label class="block text-left text-xs font-semibold text-slate-600 mb-1">Jelszó</label>
+                    <input type="password" id="app-password" placeholder="Jelszó..." required
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 text-sm">
+                </div>
+                <p id="password-error" class="text-xs text-rose-600 font-semibold hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Hibás felhasználónév vagy jelszó!
+                </p>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all">
+                    Belépés
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <header class="bg-indigo-700 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-utensils text-2xl text-amber-300"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Étkezés Nyilvántartó</h1>
+                    <span id="user-role-badge" class="text-xs bg-indigo-800/80 text-amber-300 px-2 py-0.5 rounded font-medium"></span>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <div class="flex items-center gap-3">
+                <nav class="flex space-x-1 sm:space-x-2 bg-indigo-800/60 p-1.5 rounded-xl text-sm font-medium">
+                    <button id="tab-btn-1" onclick="switchTab('tab-1')" class="px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 bg-white text-indigo-700 shadow-sm font-semibold">
+                        <i class="fa-solid fa-users"></i>
+                        <span class="hidden sm:inline">1.</span> Étkezők kezelése
+                    </button>
+                    <button id="tab-btn-2" onclick="switchTab('tab-2')" class="px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 hover:bg-indigo-600/50 text-indigo-100">
+                        <i class="fa-solid fa-clipboard-user"></i>
+                        <span class="hidden sm:inline">2.</span> Napi jelenlét
+                    </button>
+                    <button id="tab-btn-3" onclick="switchTab('tab-3')" class="px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 hover:bg-indigo-600/50 text-indigo-100">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span class="hidden sm:inline">3.</span> Statisztika
+                    </button>
+                    <button id="tab-btn-4" onclick="switchTab('tab-4')" class="px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 hover:bg-indigo-600/50 text-indigo-100">
+                        <i class="fa-solid fa-venus-mars"></i>
+                        <span class="hidden sm:inline">4.</span> Osztályonkénti statisztika
+                    </button>
+                </nav>
+                <button onclick="logout()" title="Kijelentkezés" class="bg-indigo-900/80 hover:bg-rose-600 text-white p-2.5 rounded-xl transition-all text-sm font-semibold flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- Notification Alert System -->
+        <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-opacity duration-300">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toast-msg" class="text-sm font-medium">Sikeres művelet!</span>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: ÉTKEZŐK KEZELÉSE -->
+        <!-- ========================================== -->
+        <section id="tab-1" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Registration / Edit Form Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i id="form-icon" class="fa-solid fa-user-plus text-indigo-600"></i>
+                        <span id="form-title">Új étkező felvétele</span>
+                    </h2>
+                    
+                    <form id="person-form" onsubmit="handlePersonSubmit(event)" class="space-y-4">
+                        <input type="hidden" id="person-id">
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Név *</label>
+                            <input type="text" id="person-name" required placeholder="pl. Kovács Péter" 
+                                class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nem *</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="border border-slate-200 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
+                                    <input type="radio" name="personGender" value="Lány" checked class="text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-xs font-medium text-slate-700"><i class="fa-solid fa-venus text-pink-500 mr-1"></i> Lány</span>
+                                </label>
+                                <label class="border border-slate-200 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
+                                    <input type="radio" name="personGender" value="Fiú" class="text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-xs font-medium text-slate-700"><i class="fa-solid fa-mars text-blue-500 mr-1"></i> Fiú</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Csoport / Osztály *</label>
+                            <select id="person-group" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white">
+                                <option value="">-- Válasszon csoportot --</option>
+                                <option value="Bölcsőde">Bölcsőde</option>
+                                <option value="Óvoda">Óvoda</option>
+                                <option value="1. osztály">1. osztály</option>
+                                <option value="2. osztály">2. osztály</option>
+                                <option value="3. osztály">3. osztály</option>
+                                <option value="4. osztály">4. osztály</option>
+                                <option value="5. osztály">5. osztály</option>
+                                <option value="6. osztály">6. osztály</option>
+                                <option value="7. osztály">7. osztály</option>
+                                <option value="8. osztály">8. osztály</option>
+                                <option value="Felnőtt">Felnőtt</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Kedvezmény *</label>
+                            <select id="person-discount" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white">
+                                <option value="Teljes árú">Teljes árú</option>
+                                <option value="50% Nagycsaládos">50% Nagycsaládos</option>
+                                <option value="RGYVK ingyenes">RGYVK ingyenes</option>
+                                <option value="Nagycsaládos ingyenes">Nagycsaládos ingyenes</option>
+                                <option value="Nevelt gyermek ingyenes">Nevelt gyermek ingyenes</option>
+                                <option value="Szülői bevallás ingyenes">Szülői bevallás ingyenes</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Étkezés típusa *</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="border border-slate-200 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
+                                    <input type="radio" name="mealType" value="Ebéd" checked class="text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-xs font-medium text-slate-700">Ebéd</span>
+                                </label>
+                                <label class="border border-slate-200 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-all has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
+                                    <input type="radio" name="mealType" value="Menza 3x" class="text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-xs font-medium text-slate-700">Menza 3x</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Ételérzékenység / Diéta</label>
+                            <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <label class="flex items-center gap-2.5 cursor-pointer">
+                                    <input type="checkbox" id="diet-lactose" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                    <span class="text-xs font-medium text-slate-700">Laktózmentes</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 cursor-pointer">
+                                    <input type="checkbox" id="diet-gluten" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                    <span class="text-xs font-medium text-slate-700">Gluténmentes</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 cursor-pointer">
+                                    <input type="checkbox" id="diet-milk" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                                    <span class="text-xs font-medium text-slate-700">Tejmentes</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex gap-2">
+                            <button type="submit" id="submit-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-all duration-150 text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Hozzáadás
+                            </button>
+                            <button type="button" id="cancel-btn" onclick="resetPersonForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 text-sm">
+                                Mégse
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Person List Table Card -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-5">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-indigo-600"></i> Regisztrált étkezők
+                            <span id="person-count-badge" class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">0 fő</span>
+                        </h2>
+                        <!-- Search & Tools -->
+                        <div class="flex items-center gap-2">
+                            <div class="relative flex-1 sm:w-64">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" id="person-search" oninput="renderPersonTable()" placeholder="Keresés név vagy osztály alapján..." 
+                                    class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
+                            </div>
+                            <button onclick="loadSampleData()" title="Mintaadatok betöltése" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs font-medium transition-all">
+                                <i class="fa-solid fa-database"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="overflow-x-auto flex-grow rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="py-3 px-3">Név</th>
+                                    <th class="py-3 px-3">Nem</th>
+                                    <th class="py-3 px-3">Csoport</th>
+                                    <th class="py-3 px-3">Kedvezmény</th>
+                                    <th class="py-3 px-3">Típus</th>
+                                    <th class="py-3 px-3">Diéta</th>
+                                    <th class="py-3 px-3 text-right">Műveletek</th>
+                                </tr>
+                            </thead>
+                            <tbody id="person-table-body" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Data Backup Section -->
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center text-xs text-slate-500 gap-2">
+                        <span>Adatok automatikusan mentve a böngészőben.</span>
+                        <div class="flex gap-2">
+                            <button onclick="exportJSON()" class="hover:text-indigo-600 font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-download"></i> Mentés JSON
+                            </button>
+                            <span>|</span>
+                            <label class="hover:text-indigo-600 font-medium flex items-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-upload"></i> Betöltés JSON
+                                <input type="file" id="import-file" onchange="importJSON(event)" accept=".json" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: NAPI JELENLÉT / HIÁNYZÁS -->
+        <!-- ========================================== -->
+        <section id="tab-2" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow">
+                <!-- Top Control Bar -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-5 border-b border-slate-100">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Dátum kiválasztása</label>
+                            <div class="flex items-center gap-1">
+                                <button onclick="changeDate(-1)" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all" title="Előző nap">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <input type="date" id="attendance-date" onchange="onDateOrFilterChange()" class="px-3.5 py-2 rounded-lg border border-slate-300 font-medium text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button onclick="changeDate(1)" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all" title="Következő nap">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                                <button onclick="setTodayDate()" class="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition-all ml-1">
+                                    Ma
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Szűrés Csoportra / Osztályra</label>
+                            <select id="attendance-group-filter" onchange="onDateOrFilterChange()" class="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium">
+                                <option value="ALL">Mindenki</option>
+                                <option value="Bölcsőde">Bölcsőde</option>
+                                <option value="Óvoda">Óvoda</option>
+                                <optgroup label="Tagozatok szerint">
+                                    <option value="1-4. osztály">1-4. osztály (Alsó tagozat)</option>
+                                    <option value="5-8. osztály">5-8. osztály (Felső tagozat)</option>
+                                </optgroup>
+                                <optgroup label="Egyes osztályok szerint">
+                                    <option value="1. osztály">1. osztály</option>
+                                    <option value="2. osztály">2. osztály</option>
+                                    <option value="3. osztály">3. osztály</option>
+                                    <option value="4. osztály">4. osztály</option>
+                                    <option value="5. osztály">5. osztály</option>
+                                    <option value="6. osztály">6. osztály</option>
+                                    <option value="7. osztály">7. osztály</option>
+                                    <option value="8. osztály">8. osztály</option>
+                                </optgroup>
+                                <option value="Felnőtt">Felnőtt</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Fast Action Buttons -->
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick="setAllAttendance(true)" class="flex-1 md:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold px-4 py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-check-double"></i> Mindenki JELEN
+                        </button>
+                        <button onclick="setAllAttendance(false)" class="flex-1 md:flex-none bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold px-4 py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-xmark"></i> Mindenki HIÁNYZIK
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Summary Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 text-center">
+                        <span class="text-xs font-medium text-indigo-600 block">Létszám (Szűrt)</span>
+                        <span id="stat-filtered-total" class="text-xl font-bold text-indigo-900">0 fő</span>
+                    </div>
+                    <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 text-center">
+                        <span class="text-xs font-medium text-emerald-600 block">Jelenlévő</span>
+                        <span id="stat-filtered-present" class="text-xl font-bold text-emerald-900">0 fő</span>
+                    </div>
+                    <div class="bg-rose-50/60 border border-rose-100 rounded-xl p-3 text-center">
+                        <span class="text-xs font-medium text-rose-600 block">Hiányzó</span>
+                        <span id="stat-filtered-absent" class="text-xl font-bold text-rose-900">0 fő</span>
+                    </div>
+                    <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3 text-center">
+                        <span class="text-xs font-medium text-amber-600 block">Részvételi arány</span>
+                        <span id="stat-filtered-pct" class="text-xl font-bold text-amber-900">0%</span>
+                    </div>
+                </div>
+
+                <!-- Attendance Checklist Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <th class="py-3 px-4 w-16 text-center">Státusz</th>
+                                <th class="py-3 px-4">Név</th>
+                                <th class="py-3 px-4">Nem</th>
+                                <th class="py-3 px-4">Csoport / Osztály</th>
+                                <th class="py-3 px-4">Kedvezmény</th>
+                                <th class="py-3 px-4">Étkezés típusa</th>
+                                <th class="py-3 px-4">Diéta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Dynamic checklist -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: STATISZTIKA ÉS ÖSSZESÍTŐ -->
+        <!-- ========================================== -->
+        <section id="tab-3" class="space-y-6 hidden">
+            
+            <!-- Controls / Header for Daily Report -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 card-shadow flex flex-col sm:flex-row justify-between items-center gap-4 no-print">
+                <div class="flex items-center gap-3">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Napi jelentés dátuma:</label>
+                    <input type="date" id="stats-date" onchange="onStatsDateChange()" class="px-3 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-lg text-xs shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Nyomtatás / PDF
+                    </button>
+                    <button onclick="exportKitchenCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Napi CSV Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Print Header (Visible only when printed) -->
+            <div class="hidden print-only mb-6 border-b pb-4">
+                <h1 class="text-2xl font-bold text-black">NAPI ÉTKEZÉSI ÖSSZESÍTŐ (KONYHAI JELENTÉS)</h1>
+                <p class="text-sm text-gray-600 mt-1">Dátum: <span id="print-date-display" class="font-bold"></span></p>
+            </div>
+
+            <!-- Daily Lists Side-by-Side: Absent vs Present -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Absent List -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 card-shadow border-t-4 border-t-rose-500">
+                    <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-user-xmark text-rose-500"></i> Hiányzók listája (Adott napon)
+                        </span>
+                        <span id="stats-absent-count" class="bg-rose-100 text-rose-700 text-xs px-2.5 py-0.5 rounded-full font-bold">0 fő</span>
+                    </h3>
+                    <div class="max-h-60 overflow-y-auto rounded-xl border border-slate-100 p-2 bg-slate-50/50">
+                        <ul id="stats-absent-list" class="divide-y divide-slate-200 text-xs text-slate-700">
+                            <!-- Dynamic list -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Present List -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 card-shadow border-t-4 border-t-emerald-500">
+                    <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-user-check text-emerald-500"></i> Jelenlévők listája (Adott napon)
+                        </span>
+                        <span id="stats-present-count" class="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-0.5 rounded-full font-bold">0 fő</span>
+                    </h3>
+                    <div class="max-h-60 overflow-y-auto rounded-xl border border-slate-100 p-2 bg-slate-50/50">
+                        <ul id="stats-present-list" class="divide-y divide-slate-200 text-xs text-slate-700">
+                            <!-- Dynamic list -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kitchen Portion Counts Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-indigo-600"></i> Étkezési Statisztika (Adagszámok a konyhának)
+                    </h2>
+                    <p class="text-xs text-slate-500">Kizárólag a megadott napon JELEN LÉVŐ étkezők adatai alapján számítva.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Standard Meal Matrix Table -->
+                    <div class="lg:col-span-2 overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-indigo-900 text-white text-xs font-semibold uppercase tracking-wider">
+                                    <th class="py-3 px-4">Kategória / Korcsoport</th>
+                                    <th class="py-3 px-4 text-center bg-indigo-800">Ebéd (1x)</th>
+                                    <th class="py-3 px-4 text-center bg-indigo-700">Menza (3x)</th>
+                                    <th class="py-3 px-4 text-right">Összesen</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700 font-medium">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">Bölcsőde</td>
+                                    <td id="cell-bolcsode-ebed" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-bolcsode-menza" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-bolcsode-total" class="py-3 px-4 text-right font-bold text-slate-900">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">Óvoda</td>
+                                    <td id="cell-ovoda-ebed" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-ovoda-menza" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-ovoda-total" class="py-3 px-4 text-right font-bold text-slate-900">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">Alsó tagozat (1-4. osztály)</td>
+                                    <td id="cell-also-ebed" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-also-menza" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-also-total" class="py-3 px-4 text-right font-bold text-slate-900">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">Felső tagozat (5-8. osztály)</td>
+                                    <td id="cell-felso-ebed" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-felso-menza" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-felso-total" class="py-3 px-4 text-right font-bold text-slate-900">0</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">Felnőtt</td>
+                                    <td id="cell-felnott-ebed" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-felnott-menza" class="py-3 px-4 text-center font-bold text-indigo-600">0</td>
+                                    <td id="cell-felnott-total" class="py-3 px-4 text-right font-bold text-slate-900">0</td>
+                                </tr>
+                                <tr class="bg-indigo-50 border-t-2 border-indigo-200 text-indigo-950 font-bold">
+                                    <td class="py-3.5 px-4 uppercase text-xs">ÖSSZESEN</td>
+                                    <td id="cell-sum-ebed" class="py-3.5 px-4 text-center text-base">0</td>
+                                    <td id="cell-sum-menza" class="py-3.5 px-4 text-center text-base">0</td>
+                                    <td id="cell-sum-grand" class="py-3.5 px-4 text-right text-base text-indigo-700">0 adag</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Diets / Sensitivity Breakdown Card -->
+                    <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4 sm:p-5 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-amber-900 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-amber-200/60 pb-2">
+                                <i class="fa-solid fa-wheat-awn-circle-exclamation text-amber-600"></i> Diétás Adagok & Névsor
+                            </h3>
+                            
+                            <!-- Diet Counts Breakdown -->
+                            <div class="space-y-2 text-xs mb-4">
+                                <div class="bg-white p-2.5 rounded-lg border border-amber-200/60 shadow-sm flex justify-between items-center">
+                                    <span class="font-semibold text-slate-700">Laktózmentes:</span>
+                                    <div class="text-right">
+                                        <span id="diet-lactose-ebed" class="font-bold text-indigo-600">0 Ebéd</span> / 
+                                        <span id="diet-lactose-menza" class="font-bold text-indigo-600">0 Menza3x</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-lg border border-amber-200/60 shadow-sm flex justify-between items-center">
+                                    <span class="font-semibold text-slate-700">Gluténmentes:</span>
+                                    <div class="text-right">
+                                        <span id="diet-gluten-ebed" class="font-bold text-indigo-600">0 Ebéd</span> / 
+                                        <span id="diet-gluten-menza" class="font-bold text-indigo-600">0 Menza3x</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-lg border border-amber-200/60 shadow-sm flex justify-between items-center">
+                                    <span class="font-semibold text-slate-700">Tejmentes:</span>
+                                    <div class="text-right">
+                                        <span id="diet-milk-ebed" class="font-bold text-indigo-600">0 Ebéd</span> / 
+                                        <span id="diet-milk-menza" class="font-bold text-indigo-600">0 Menza3x</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Names List for Diets -->
+                            <div class="border-t border-amber-200/80 pt-3">
+                                <h4 class="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-card"></i> Diétás étkezők névsora (Mai jelenlévők)
+                                </h4>
+                                <div id="diet-names-list" class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                                    <!-- Dynamic Detailed Names List -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-[11px] text-amber-800/80 italic mt-3">
+                            * Figyelem: A listán kizárólag a kiválasztott napon JELEN lévő diétás étkezők szerepelnek.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Section for Kitchen -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow">
+                <h3 class="text-base font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-comment-dots text-indigo-600"></i> Megjegyzés / Üzenet a konyhának
+                </h3>
+                <p class="text-xs text-slate-500 mb-3">
+                    Ide írhatja a napi extra igényeket vagy megjegyzéseket.
+                </p>
+                <textarea id="daily-note" oninput="saveDailyNote()" rows="3" placeholder="pl.: Extra 2 adag felnőtt ebéd kérve..." 
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm no-print"></textarea>
+                
+                <!-- Print View Note Display -->
+                <div id="print-note-display" class="hidden print-only p-3 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 whitespace-pre-wrap mt-2">
+                    <!-- Dynamic note for print -->
+                </div>
+            </div>
+
+            <!-- IDŐSZAKI HIÁNYZÁSOK -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow no-print">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-week text-rose-600"></i> Időszaki hiányzások lekérdezése (Dátumtól – Dátumig)
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Válasszon ki egy időszakot, hogy lássa, kik és mikor hiányoztak.</p>
+                    </div>
+                    <button onclick="exportRangeAbsencesCSV()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3.5 py-2 rounded-lg text-xs transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Hiányzások Exportálása (CSV)
+                    </button>
+                </div>
+
+                <!-- Date Range Selectors -->
+                <div class="flex flex-wrap items-center gap-4 mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-600">Kezdő dátum:</label>
+                        <input type="date" id="range-start-date" onchange="renderRangeAbsences()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-600">Záró dátum:</label>
+                        <input type="date" id="range-end-date" onchange="renderRangeAbsences()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                    <button onclick="setCurrentMonthRange()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-all ml-auto">
+                        Aktuális hónap
+                    </button>
+                </div>
+
+                <!-- Absence Table Result -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                <th class="py-3 px-4">Név</th>
+                                <th class="py-3 px-4">Csoport / Osztály</th>
+                                <th class="py-3 px-4 text-center">Hiányzott napok száma</th>
+                                <th class="py-3 px-4">Hiányzások dátumai</th>
+                            </tr>
+                        </thead>
+                        <tbody id="range-absences-tbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: OSZTÁLYONKÉNTI NEMI ÉS KEDVEZMÉNY STATISZTIKA -->
+        <!-- ========================================== -->
+        <section id="tab-4" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 card-shadow">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-200">
+                    <div>
+                        <h2 class="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-indigo-600"></i>
+                            4. Osztályonkénti Nemi és Kedvezmény Statisztika
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">Lányok és fiúk száma osztályonként/csoportonként, kedvezmény-típusok szerint részletezve.</p>
+                    </div>
+                    <button onclick="window.print()" class="no-print bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-lg text-xs shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Kimutatás Nyomtatása
+                    </button>
+                </div>
+
+                <!-- Print Header -->
+                <div class="hidden print-only mb-4 border-b pb-2">
+                    <h1 class="text-xl font-bold">STATISZTIKAI KIMUTATÁS (OSZTÁLYONKÉNTI NEMI ÉS KEDVEZMÉNY BONTÁS)</h1>
+                </div>
+
+                <!-- OSZTÁLYONKÉNTI DETALIZÁLT TÁBLÁZAT -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-indigo-950 text-white font-semibold uppercase tracking-wider text-[11px]">
+                                <th class="py-3 px-3 border-r border-indigo-900">Osztály / Csoport</th>
+                                <th class="py-3 px-2 text-center border-r border-indigo-900 w-16">Nem</th>
+                                <th class="py-3 px-2 text-center">Teljes árú</th>
+                                <th class="py-3 px-2 text-center">50% Nagycsal.</th>
+                                <th class="py-3 px-2 text-center">RGYVK ingy.</th>
+                                <th class="py-3 px-2 text-center">Nagycsal. ingy.</th>
+                                <th class="py-3 px-2 text-center">Nevelt gy. ingy.</th>
+                                <th class="py-3 px-2 text-center">Szülői bev. ingy.</th>
+                                <th class="py-3 px-3 text-right bg-indigo-900 font-bold">Összesen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailed-stat-table-body" class="divide-y divide-slate-200 font-medium text-slate-700">
+                            <!-- Dinamikus tartalom generálás -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            &copy; Étkezés Nyilvántartó Rendszer - Bölcsőde, Óvoda, Iskola és Felnőtt Étkeztetés Készítette Radnai Tamás 
+        </div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // FELHASZNÁLÓI JOGOSULTSÁG ÉS BELÉPÉS LOGIKA
+        // ==========================================
+        const USERS = {
+            'Admin': { pass: 'Szuhakallo3731', allowedTabs: ['tab-1', 'tab-2', 'tab-3', 'tab-4'], defaultTab: 'tab-1', label: 'Adminisztrátor (Teljes)' },
+            'Ardmin': { pass: 'Szuhakallo3731', allowedTabs: ['tab-1', 'tab-2', 'tab-3', 'tab-4'], defaultTab: 'tab-1', label: 'Adminisztrátor (Teljes)' },
+            'Iskola': { pass: 'Iskola', allowedTabs: ['tab-2', 'tab-3', 'tab-4'], defaultTab: 'tab-2', label: 'Iskolai Felhasználó' },
+            'Konyha': { pass: 'Konyha', allowedTabs: ['tab-2', 'tab-3'], defaultTab: 'tab-2', label: 'Konyhai Felhasználó' },
+            'Ovi': { pass: 'Ovi', allowedTabs: ['tab-2', 'tab-3'], defaultTab: 'tab-2', label: 'Óvodai Felhasználó' }
+        };
+
+        function checkLogin(e) {
+            if (e) e.preventDefault();
+            const userVal = document.getElementById('app-username').value.trim();
+            const passVal = document.getElementById('app-password').value.trim();
+            const errorMsg = document.getElementById('password-error');
+
+            if (USERS[userVal] && USERS[userVal].pass === passVal) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('currentUser', userVal);
+                
+                errorMsg.classList.add('hidden');
+                applyUserPermissions();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            location.reload();
+        }
+
+        function applyUserPermissions() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const username = sessionStorage.getItem('currentUser');
+
+            if (!isLoggedIn || !USERS[username]) {
+                document.getElementById('login-screen').classList.remove('hidden');
+                return;
+            }
+
+            const userData = USERS[username];
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('user-role-badge').textContent = `[${userData.label}]`;
+
+            // Menügombok testreszabása a jogosultságok alapján
+            ['tab-1', 'tab-2', 'tab-3', 'tab-4'].forEach(tabId => {
+                const btnNum = tabId.split('-')[1];
+                const btn = document.getElementById(`tab-btn-${btnNum}`);
+                if (btn) {
+                    if (userData.allowedTabs.includes(tabId)) {
+                        btn.classList.remove('hidden');
+                    } else {
+                        btn.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Alapértelmezett megnyitott fül beállítása
+            switchTab(userData.defaultTab);
+        }
+
+        // ==========================================
+        // STATE MANAGEMENT & DATA MODELS
+        // ==========================================
+        
+        let persons = [];
+        let attendanceRecords = {};
+        let dailyNotes = {};
+
+        const STORAGE_KEY_PERSONS = 'etkezes_persons_v2';
+        const STORAGE_KEY_ATTENDANCE = 'etkezes_attendance_v2';
+        const STORAGE_KEY_NOTES = 'etkezes_notes_v2';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            
+            const todayStr = getTodayDateString();
+            document.getElementById('attendance-date').value = todayStr;
+            document.getElementById('stats-date').value = todayStr;
+
+            setCurrentMonthRange(false);
+
+            applyUserPermissions();
+
+            renderPersonTable();
+            renderAttendanceTable();
+            renderStatistics();
+        });
+
+        function getTodayDateString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function setCurrentMonthRange(triggerRender = true) {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            const formatDate = (d) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
+            document.getElementById('range-start-date').value = formatDate(firstDay);
+            document.getElementById('range-end-date').value = formatDate(lastDay);
+
+            if (triggerRender) {
+                renderRangeAbsences();
+            }
+        }
+
+        function changeDate(days) {
+            const dateInput = document.getElementById('attendance-date');
+            if (!dateInput.value) return;
+
+            const current = new Date(dateInput.value);
+            current.setDate(current.getDate() + days);
+
+            const year = current.getFullYear();
+            const month = String(current.getMonth() + 1).padStart(2, '0');
+            const day = String(current.getDate()).padStart(2, '0');
+
+            dateInput.value = `${year}-${month}-${day}`;
+            onDateOrFilterChange();
+        }
+
+        function setTodayDate() {
+            document.getElementById('attendance-date').value = getTodayDateString();
+            onDateOrFilterChange();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY_PERSONS, JSON.stringify(persons));
+            localStorage.setItem(STORAGE_KEY_ATTENDANCE, JSON.stringify(attendanceRecords));
+            localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(dailyNotes));
+        }
+
+        function loadFromLocalStorage() {
+            const savedPersons = localStorage.getItem(STORAGE_KEY_PERSONS);
+            const savedAttendance = localStorage.getItem(STORAGE_KEY_ATTENDANCE);
+            const savedNotes = localStorage.getItem(STORAGE_KEY_NOTES);
+
+            if (savedPersons) {
+                try { persons = JSON.parse(savedPersons); } catch (e) { persons = []; }
+            } else {
+                persons = getSampleData();
+                saveToLocalStorage();
+            }
+
+            if (savedAttendance) {
+                try { attendanceRecords = JSON.parse(savedAttendance); } catch (e) { attendanceRecords = {}; }
+            }
+
+            if (savedNotes) {
+                try { dailyNotes = JSON.parse(savedNotes); } catch (e) { dailyNotes = {}; }
+            }
+        }
+
+        function getSampleData() {
+            return [
+                { id: 'p_1', name: 'Kovács Anna', gender: 'Lány', group: 'Óvoda', discount: 'Teljes árú', mealType: 'Menza 3x', diets: { lactose: true, gluten: false, milk: false } },
+                { id: 'p_2', name: 'Nagy Balázs', gender: 'Fiú', group: '1. osztály', discount: '50% Nagycsaládos', mealType: 'Ebéd', diets: { lactose: false, gluten: false, milk: false } },
+                { id: 'p_3', name: 'Szabó Péter', gender: 'Fiú', group: '5. osztály', discount: 'RGYVK ingyenes', mealType: 'Menza 3x', diets: { lactose: false, gluten: true, milk: false } }
+            ];
+        }
+
+        function loadSampleData() {
+            if (confirm('Betölti a mintaadatokat? Ezzel felülírja a jelenlegi étkezői listát!')) {
+                persons = getSampleData();
+                saveToLocalStorage();
+                renderPersonTable();
+                showToast('Mintaadatok betöltve!');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = message;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else if (type === 'danger') {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-sky-400 text-lg';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            const username = sessionStorage.getItem('currentUser');
+            if (username && USERS[username] && !USERS[username].allowedTabs.includes(tabId)) {
+                return; // Ha a felhasználónak nincs joga megnyitni ezt a fület, megszakítjuk
+            }
+
+            ['tab-1', 'tab-2', 'tab-3', 'tab-4'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+
+                const btn = document.getElementById(`tab-btn-${id.split('-')[1]}`);
+                if (btn) {
+                    btn.className = 'px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 hover:bg-indigo-600/50 text-indigo-100';
+                }
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`tab-btn-${tabId.split('-')[1]}`);
+            if (activeBtn) {
+                activeBtn.className = 'px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 flex items-center gap-2 bg-white text-indigo-700 shadow-sm font-semibold';
+            }
+
+            if (tabId === 'tab-2') {
+                renderAttendanceTable();
+            } else if (tabId === 'tab-3') {
+                const attDate = document.getElementById('attendance-date').value;
+                if (attDate) document.getElementById('stats-date').value = attDate;
+                renderStatistics();
+            } else if (tabId === 'tab-4') {
+                renderDetailedStatistics();
+            }
+        }
+
+        function handlePersonSubmit(e) {
+            e.preventDefault();
+            const idInput = document.getElementById('person-id').value;
+            const name = document.getElementById('person-name').value.trim();
+            const gender = document.querySelector('input[name="personGender"]:checked').value;
+            const group = document.getElementById('person-group').value;
+            const discount = document.getElementById('person-discount').value;
+            const mealType = document.querySelector('input[name="mealType"]:checked').value;
+            const lactose = document.getElementById('diet-lactose').checked;
+            const gluten = document.getElementById('diet-gluten').checked;
+            const milk = document.getElementById('diet-milk').checked;
+
+            if (!name || !group || !discount) {
+                showToast('Kérjük töltse ki a kötelező mezőket!', 'danger');
+                return;
+            }
+
+            if (idInput) {
+                const index = persons.findIndex(p => p.id === idInput);
+                if (index !== -1) {
+                    persons[index] = {
+                        id: idInput,
+                        name,
+                        gender,
+                        group,
+                        discount,
+                        mealType,
+                        diets: { lactose, gluten, milk }
+                    };
+                    showToast('Étkező adatai frissítve!');
+                }
+            } else {
+                const newPerson = {
+                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    name,
+                    gender,
+                    group,
+                    discount,
+                    mealType,
+                    diets: { lactose, gluten, milk }
+                };
+                persons.push(newPerson);
+                showToast('Új étkező sikeresen hozzáadva!');
+            }
+
+            saveToLocalStorage();
+            resetPersonForm();
+            renderPersonTable();
+        }
+
+        function editPerson(id) {
+            const person = persons.find(p => p.id === id);
+            if (!person) return;
+
+            document.getElementById('person-id').value = person.id;
+            document.getElementById('person-name').value = person.name;
+            
+            const radioGender = document.querySelector(`input[name="personGender"][value="${person.gender || 'Lány'}"]`);
+            if (radioGender) radioGender.checked = true;
+
+            document.getElementById('person-group').value = person.group;
+            document.getElementById('person-discount').value = person.discount || 'Teljes árú';
+            
+            const radioMeal = document.querySelector(`input[name="mealType"][value="${person.mealType}"]`);
+            if (radioMeal) radioMeal.checked = true;
+
+            document.getElementById('diet-lactose').checked = person.diets?.lactose || false;
+            document.getElementById('diet-gluten').checked = person.diets?.gluten || false;
+            document.getElementById('diet-milk').checked = person.diets?.milk || false;
+
+            document.getElementById('form-title').textContent = 'Étkező szerkesztése';
+            document.getElementById('form-icon').className = 'fa-solid fa-user-pen text-amber-500';
+            document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-check"></i> Mentés';
+            document.getElementById('submit-btn').className = 'flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center justify-center gap-2';
+            document.getElementById('cancel-btn').classList.remove('hidden');
+        }
+
+        function resetPersonForm() {
+            document.getElementById('person-form').reset();
+            document.getElementById('person-id').value = '';
+            document.getElementById('form-title').textContent = 'Új étkező felvétele';
+            document.getElementById('form-icon').className = 'fa-solid fa-user-plus text-indigo-600';
+            document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-plus"></i> Hozzáadás';
+            document.getElementById('submit-btn').className = 'flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-all text-sm flex items-center justify-center gap-2';
+            document.getElementById('cancel-btn').classList.add('hidden');
+        }
+
+        function deletePerson(id) {
+            if (confirm('Biztosan törölni szeretné ezt az étkezőt?')) {
+                persons = persons.filter(p => p.id !== id);
+                saveToLocalStorage();
+                renderPersonTable();
+                showToast('Étkező törölve', 'info');
+            }
+        }
+
+        function renderPersonTable() {
+            const tbody = document.getElementById('person-table-body');
+            const searchVal = document.getElementById('person-search').value.toLowerCase().trim();
+            
+            const filtered = persons.filter(p => 
+                p.name.toLowerCase().includes(searchVal) || 
+                p.group.toLowerCase().includes(searchVal) ||
+                (p.discount && p.discount.toLowerCase().includes(searchVal))
+            );
+
+            document.getElementById('person-count-badge').textContent = `${persons.length} fő`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-400">
+                            <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                            Nincs találat a megadott kritériumok alapján.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                const dietBadges = [];
+                if (p.diets?.lactose) dietBadges.push('<span class="bg-amber-100 text-amber-800 text-[10px] font-medium px-1.5 py-0.5 rounded">Laktóz</span>');
+                if (p.diets?.gluten) dietBadges.push('<span class="bg-orange-100 text-orange-800 text-[10px] font-medium px-1.5 py-0.5 rounded">Glutén</span>');
+                if (p.diets?.milk) dietBadges.push('<span class="bg-sky-100 text-sky-800 text-[10px] font-medium px-1.5 py-0.5 rounded">Tej</span>');
+
+                const genderIcon = p.gender === 'Fiú' 
+                    ? '<span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs font-semibold"><i class="fa-solid fa-mars"></i> Fiú</span>'
+                    : '<span class="text-pink-600 bg-pink-50 px-2 py-0.5 rounded text-xs font-semibold"><i class="fa-solid fa-venus"></i> Lány</span>';
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-all">
+                        <td class="py-3 px-3 font-semibold text-slate-800">${escapeHtml(p.name)}</td>
+                        <td class="py-3 px-3">${genderIcon}</td>
+                        <td class="py-3 px-3">
+                            <span class="bg-slate-100 text-slate-700 text-xs px-2 py-1 rounded-md font-medium border border-slate-200">${escapeHtml(p.group)}</span>
+                        </td>
+                        <td class="py-3 px-3 text-xs font-medium text-slate-600">${escapeHtml(p.discount || 'Teljes árú')}</td>
+                        <td class="py-3 px-3">
+                            <span class="text-xs font-semibold ${p.mealType === 'Menza 3x' ? 'text-indigo-600' : 'text-emerald-600'}">
+                                ${p.mealType}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex flex-wrap gap-1">
+                                ${dietBadges.length > 0 ? dietBadges.join('') : '<span class="text-slate-400 text-xs">-</span>'}
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <button onclick="editPerson('${p.id}')" class="text-indigo-600 hover:text-indigo-900 p-1.5 rounded hover:bg-indigo-50 transition-all mr-1" title="Szerkesztés">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deletePerson('${p.id}')" class="text-rose-600 hover:text-rose-900 p-1.5 rounded hover:bg-rose-50 transition-all" title="Törlés">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function onDateOrFilterChange() {
+            renderAttendanceTable();
+        }
+
+        function setAllAttendance(isPresent) {
+            const date = document.getElementById('attendance-date').value;
+            if (!date) return;
+
+            if (!attendanceRecords[date]) {
+                attendanceRecords[date] = {};
+            }
+
+            const groupFilter = document.getElementById('attendance-group-filter').value;
+            const targetPersons = getFilteredPersonsByGroup(groupFilter);
+
+            targetPersons.forEach(p => {
+                attendanceRecords[date][p.id] = isPresent;
+            });
+
+            saveToLocalStorage();
+            renderAttendanceTable();
+            showToast(isPresent ? 'Mindenki jelen van-ra állítva!' : 'Mindenki hiányzóra állítva!', 'info');
+        }
+
+        function toggleAttendance(personId, isChecked) {
+            const date = document.getElementById('attendance-date').value;
+            if (!date) return;
+
+            if (!attendanceRecords[date]) {
+                attendanceRecords[date] = {};
+            }
+
+            attendanceRecords[date][personId] = isChecked;
+            saveToLocalStorage();
+            updateAttendanceStats();
+        }
+
+        function getFilteredPersonsByGroup(filter) {
+            if (filter === 'ALL') return persons;
+            if (filter === 'Bölcsőde') return persons.filter(p => p.group === 'Bölcsőde');
+            if (filter === 'Óvoda') return persons.filter(p => p.group === 'Óvoda');
+            if (filter === '1-4. osztály') return persons.filter(p => ['1. osztály', '2. osztály', '3. osztály', '4. osztály'].includes(p.group));
+            if (filter === '5-8. osztály') return persons.filter(p => ['5. osztály', '6. osztály', '7. osztály', '8. osztály'].includes(p.group));
+            if (filter === 'Felnőtt') return persons.filter(p => p.group === 'Felnőtt');
+            
+            return persons.filter(p => p.group === filter);
+        }
+
+        function renderAttendanceTable() {
+            const date = document.getElementById('attendance-date').value;
+            const filter = document.getElementById('attendance-group-filter').value;
+            const tbody = document.getElementById('attendance-table-body');
+
+            if (!date) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">Válasszon dátumot!</td></tr>';
+                return;
+            }
+
+            if (!attendanceRecords[date]) {
+                attendanceRecords[date] = {};
+                persons.forEach(p => {
+                    attendanceRecords[date][p.id] = true;
+                });
+                saveToLocalStorage();
+            }
+
+            const activeList = getFilteredPersonsByGroup(filter);
+
+            if (activeList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">Nincs étkező ebben a csoportban / osztályban.</td></tr>';
+                updateAttendanceStats();
+                return;
+            }
+
+            tbody.innerHTML = activeList.map(p => {
+                const isPresent = attendanceRecords[date][p.id] !== undefined ? attendanceRecords[date][p.id] : true;
+
+                const dietBadges = [];
+                if (p.diets?.lactose) dietBadges.push('Laktóz');
+                if (p.diets?.gluten) dietBadges.push('Glutén');
+                if (p.diets?.milk) dietBadges.push('Tej');
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-all ${!isPresent ? 'bg-rose-50/30' : ''}">
+                        <td class="py-3 px-4 text-center">
+                            <input type="checkbox" 
+                                ${isPresent ? 'checked' : ''} 
+                                onchange="toggleAttendance('${p.id}', this.checked)"
+                                class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+                        </td>
+                        <td class="py-3 px-4 font-semibold ${!isPresent ? 'text-slate-400 line-through' : 'text-slate-800'}">
+                            ${escapeHtml(p.name)}
+                        </td>
+                        <td class="py-3 px-4 text-xs font-semibold text-slate-600">
+                            ${p.gender || 'Lány'}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded font-medium border border-slate-200">${escapeHtml(p.group)}</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs font-medium text-slate-600">
+                            ${escapeHtml(p.discount || 'Teljes árú')}
+                        </td>
+                        <td class="py-3 px-4 font-medium text-xs ${p.mealType === 'Menza 3x' ? 'text-indigo-600' : 'text-emerald-600'}">
+                            ${p.mealType}
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-500">
+                            ${dietBadges.length > 0 ? dietBadges.join(', ') : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateAttendanceStats();
+        }
+
+        function updateAttendanceStats() {
+            const date = document.getElementById('attendance-date').value;
+            const filter = document.getElementById('attendance-group-filter').value;
+            const activeList = getFilteredPersonsByGroup(filter);
+            const total = activeList.length;
+
+            let present = 0;
+            if (attendanceRecords[date]) {
+                activeList.forEach(p => {
+                    if (attendanceRecords[date][p.id] !== false) {
+                        present++;
+                    }
+                });
+            } else {
+                present = total;
+            }
+
+            const absent = total - present;
+            const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+
+            document.getElementById('stat-filtered-total').textContent = `${total} fő`;
+            document.getElementById('stat-filtered-present').textContent = `${present} fő`;
+            document.getElementById('stat-filtered-absent').textContent = `${absent} fő`;
+            document.getElementById('stat-filtered-pct').textContent = `${pct}%`;
+        }
+
+        function onStatsDateChange() {
+            renderStatistics();
+        }
+
+        function saveDailyNote() {
+            const date = document.getElementById('stats-date').value;
+            if (!date) return;
+
+            const noteVal = document.getElementById('daily-note').value;
+            dailyNotes[date] = noteVal;
+            saveToLocalStorage();
+            
+            document.getElementById('print-note-display').textContent = noteVal ? `Megjegyzés: ${noteVal}` : 'Megjegyzés: (Nincs megjegyzés)';
+        }
+
+        function renderStatistics() {
+            const date = document.getElementById('stats-date').value;
+            document.getElementById('print-date-display').textContent = date;
+
+            const currentNote = dailyNotes[date] || '';
+            document.getElementById('daily-note').value = currentNote;
+            document.getElementById('print-note-display').textContent = currentNote ? `Megjegyzés: ${currentNote}` : 'Megjegyzés: (Nincs megjegyzés)';
+
+            if (!attendanceRecords[date]) {
+                attendanceRecords[date] = {};
+                persons.forEach(p => { attendanceRecords[date][p.id] = true; });
+            }
+
+            const dayRecord = attendanceRecords[date] || {};
+
+            const absentPersons = [];
+            const presentPersons = [];
+
+            persons.forEach(p => {
+                const isPresent = dayRecord[p.id] !== false;
+                if (isPresent) {
+                    presentPersons.push(p);
+                } else {
+                    absentPersons.push(p);
+                }
+            });
+
+            document.getElementById('stats-absent-count').textContent = `${absentPersons.length} fő`;
+            const absentUl = document.getElementById('stats-absent-list');
+            if (absentPersons.length === 0) {
+                absentUl.innerHTML = '<li class="py-2 text-center text-slate-400">Nincs hiányzó ezen a napon.</li>';
+            } else {
+                absentUl.innerHTML = absentPersons.map(p => `
+                    <li class="py-1.5 flex justify-between items-center">
+                        <span class="font-medium text-slate-800">${escapeHtml(p.name)}</span>
+                        <span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded text-[10px] font-semibold">${escapeHtml(p.group)}</span>
+                    </li>
+                `).join('');
+            }
+
+            document.getElementById('stats-present-count').textContent = `${presentPersons.length} fő`;
+            const presentUl = document.getElementById('stats-present-list');
+            if (presentPersons.length === 0) {
+                presentUl.innerHTML = '<li class="py-2 text-center text-slate-400">Nincs jelenlévő étkező.</li>';
+            } else {
+                presentUl.innerHTML = presentPersons.map(p => `
+                    <li class="py-1.5 flex justify-between items-center">
+                        <span class="font-medium text-slate-800">${escapeHtml(p.name)}</span>
+                        <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold">${escapeHtml(p.group)}</span>
+                    </li>
+                `).join('');
+            }
+
+            const matrix = {
+                'Bölcsőde': { ebed: 0, menza: 0 },
+                'Óvoda': { ebed: 0, menza: 0 },
+                'Alsó tagozat': { ebed: 0, menza: 0 },
+                'Felső tagozat': { ebed: 0, menza: 0 },
+                'Felnőtt': { ebed: 0, menza: 0 }
+            };
+
+            const diets = {
+                lactose: { ebed: 0, menza: 0 },
+                gluten: { ebed: 0, menza: 0 },
+                milk: { ebed: 0, menza: 0 }
+            };
+
+            const dietPersonsList = [];
+
+            presentPersons.forEach(p => {
+                let cat = 'Felnőtt';
+                if (p.group === 'Bölcsőde') cat = 'Bölcsőde';
+                else if (p.group === 'Óvoda') cat = 'Óvoda';
+                else if (['1. osztály', '2. osztály', '3. osztály', '4. osztály'].includes(p.group)) cat = 'Alsó tagozat';
+                else if (['5. osztály', '6. osztály', '7. osztály', '8. osztály'].includes(p.group)) cat = 'Felső tagozat';
+                else if (p.group === 'Felnőtt') cat = 'Felnőtt';
+
+                const isMenza = p.mealType === 'Menza 3x';
+                
+                if (isMenza) {
+                    matrix[cat].menza++;
+                } else {
+                    matrix[cat].ebed++;
+                }
+
+                const pDiets = [];
+                if (p.diets?.lactose) {
+                    if (isMenza) diets.lactose.menza++; else diets.lactose.ebed++;
+                    pDiets.push('Laktózmentes');
+                }
+                if (p.diets?.gluten) {
+                    if (isMenza) diets.gluten.menza++; else diets.gluten.ebed++;
+                    pDiets.push('Gluténmentes');
+                }
+                if (p.diets?.milk) {
+                    if (isMenza) diets.milk.menza++; else diets.milk.ebed++;
+                    pDiets.push('Tejmentes');
+                }
+
+                if (pDiets.length > 0) {
+                    dietPersonsList.push({
+                        name: p.name,
+                        group: p.group,
+                        mealType: p.mealType,
+                        dietsText: pDiets.join(', ')
+                    });
+                }
+            });
+
+            document.getElementById('cell-bolcsode-ebed').textContent = matrix['Bölcsőde'].ebed;
+            document.getElementById('cell-bolcsode-menza').textContent = matrix['Bölcsőde'].menza;
+            document.getElementById('cell-bolcsode-total').textContent = matrix['Bölcsőde'].ebed + matrix['Bölcsőde'].menza;
+
+            document.getElementById('cell-ovoda-ebed').textContent = matrix['Óvoda'].ebed;
+            document.getElementById('cell-ovoda-menza').textContent = matrix['Óvoda'].menza;
+            document.getElementById('cell-ovoda-total').textContent = matrix['Óvoda'].ebed + matrix['Óvoda'].menza;
+
+            document.getElementById('cell-also-ebed').textContent = matrix['Alsó tagozat'].ebed;
+            document.getElementById('cell-also-menza').textContent = matrix['Alsó tagozat'].menza;
+            document.getElementById('cell-also-total').textContent = matrix['Alsó tagozat'].ebed + matrix['Alsó tagozat'].menza;
+
+            document.getElementById('cell-felso-ebed').textContent = matrix['Felső tagozat'].ebed;
+            document.getElementById('cell-felso-menza').textContent = matrix['Felső tagozat'].menza;
+            document.getElementById('cell-felso-total').textContent = matrix['Felső tagozat'].ebed + matrix['Felső tagozat'].menza;
+
+            document.getElementById('cell-felnott-ebed').textContent = matrix['Felnőtt'].ebed;
+            document.getElementById('cell-felnott-menza').textContent = matrix['Felnőtt'].menza;
+            document.getElementById('cell-felnott-total').textContent = matrix['Felnőtt'].ebed + matrix['Felnőtt'].menza;
+
+            const totalEbed = Object.values(matrix).reduce((acc, curr) => acc + curr.ebed, 0);
+            const totalMenza = Object.values(matrix).reduce((acc, curr) => acc + curr.menza, 0);
+
+            document.getElementById('cell-sum-ebed').textContent = totalEbed;
+            document.getElementById('cell-sum-menza').textContent = totalMenza;
+            document.getElementById('cell-sum-grand').textContent = `${totalEbed + totalMenza} adag`;
+
+            document.getElementById('diet-lactose-ebed').textContent = `${diets.lactose.ebed} Ebéd`;
+            document.getElementById('diet-lactose-menza').textContent = `${diets.lactose.menza} Menza3x`;
+
+            document.getElementById('diet-gluten-ebed').textContent = `${diets.gluten.ebed} Ebéd`;
+            document.getElementById('diet-gluten-menza').textContent = `${diets.gluten.menza} Menza3x`;
+
+            document.getElementById('diet-milk-ebed').textContent = `${diets.milk.ebed} Ebéd`;
+            document.getElementById('diet-milk-menza').textContent = `${diets.milk.menza} Menza3x`;
+
+            const dietNamesContainer = document.getElementById('diet-names-list');
+            if (dietPersonsList.length === 0) {
+                dietNamesContainer.innerHTML = '<div class="text-[11px] text-slate-400 italic">Nincs diétás igénylő a mai jelenlévők között.</div>';
+            } else {
+                dietNamesContainer.innerHTML = dietPersonsList.map(dp => `
+                    <div class="bg-white p-2 rounded border border-amber-200/80 text-[11px] shadow-sm">
+                        <div class="flex justify-between items-center font-bold text-slate-800">
+                            <span>${escapeHtml(dp.name)}</span>
+                            <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">${escapeHtml(dp.group)}</span>
+                        </div>
+                        <div class="text-[10px] text-amber-900 font-medium mt-0.5">
+                            ${dp.dietsText} (${dp.mealType})
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderRangeAbsences();
+        }
+
+        function renderRangeAbsences() {
+            const startVal = document.getElementById('range-start-date').value;
+            const endVal = document.getElementById('range-end-date').value;
+            const tbody = document.getElementById('range-absences-tbody');
+
+            if (!startVal || !endVal) {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400">Kérjük válasszon ki egy kezdő és záró dátumot!</td></tr>';
+                return;
+            }
+
+            const startDate = new Date(startVal);
+            const endDate = new Date(endVal);
+
+            if (startDate > endDate) {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-rose-500 font-medium">A kezdő dátum nem lehet későbbi a záró dátumnál!</td></tr>';
+                return;
+            }
+
+            const personAbsences = {};
+            persons.forEach(p => {
+                personAbsences[p.id] = {
+                    name: p.name,
+                    group: p.group,
+                    dates: []
+                };
+            });
+
+            Object.keys(attendanceRecords).forEach(dateStr => {
+                const currentDate = new Date(dateStr);
+                if (currentDate >= startDate && currentDate <= endDate) {
+                    const record = attendanceRecords[dateStr];
+                    Object.keys(record).forEach(personId => {
+                        if (record[personId] === false && personAbsences[personId]) {
+                            personAbsences[personId].dates.push(dateStr);
+                        }
+                    });
+                }
+            });
+
+            const absentResults = Object.values(personAbsences)
+                .filter(item => item.dates.length > 0)
+                .sort((a, b) => b.dates.length - a.dates.length);
+
+            if (absentResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-emerald-600 font-medium">
+                            <i class="fa-solid fa-circle-check text-lg mr-1"></i> Ebben az időszakban nem volt rögzített hiányzás.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = absentResults.map(item => {
+                item.dates.sort();
+                const formattedDates = item.dates.map(d => `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded text-[11px] font-mono mr-1 mb-1 inline-block">${d}</span>`).join('');
+                
+                return `
+                    <tr class="hover:bg-slate-50 transition-all">
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(item.name)}</td>
+                        <td class="py-3 px-4">
+                            <span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-medium">${escapeHtml(item.group)}</span>
+                        </td>
+                        <td class="py-3 px-4 text-center font-bold text-rose-600">${item.dates.length} nap</td>
+                        <td class="py-3 px-4">${formattedDates}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // EXPORT / IMPORT SYSTEM
+        // ==========================================
+
+        function exportJSON() {
+            const data = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                persons,
+                attendanceRecords,
+                dailyNotes
+            };
+
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `etkezes_adatbazis_mentes_${getTodayDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('JSON adatbázis sikeresen letöltve!');
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.persons && Array.isArray(imported.persons)) {
+                        persons = imported.persons;
+                        if (imported.attendanceRecords) attendanceRecords = imported.attendanceRecords;
+                        if (imported.dailyNotes) dailyNotes = imported.dailyNotes;
+
+                        saveToLocalStorage();
+                        renderPersonTable();
+                        renderAttendanceTable();
+                        renderStatistics();
+                        showToast('Adatok sikeresen beimportálva!');
+                    } else {
+                        showToast('Érvénytelen mentési fájl!', 'danger');
+                    }
+                } catch (err) {
+                    showToast('Hiba történt a JSON feldolgozásakor!', 'danger');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportKitchenCSV() {
+            const date = document.getElementById('stats-date').value;
+            const dayRecord = attendanceRecords[date] || {};
+
+            let csvContent = "\uFEFFNév;Nem;Csoport / Osztály;Kedvezmény;Étkezés Típusa;Státusz;Diéta\n";
+
+            persons.forEach(p => {
+                const isPresent = dayRecord[p.id] !== false;
+                const pDiets = [];
+                if (p.diets?.lactose) pDiets.push('Laktózmentes');
+                if (p.diets?.gluten) pDiets.push('Gluténmentes');
+                if (p.diets?.milk) pDiets.push('Tejmentes');
+
+                csvContent += `"${p.name}";"${p.gender || 'Lány'}";"${p.group}";"${p.discount || 'Teljes árú'}";"${p.mealType}";"${isPresent ? 'JELEN' : 'HIÁNYZIK'}";"${pDiets.join(', ')}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `konyhai_jelentest_${date}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Napi CSV kiexportálva!');
+        }
+
+        function exportRangeAbsencesCSV() {
+            const startVal = document.getElementById('range-start-date').value;
+            const endVal = document.getElementById('range-end-date').value;
+            if (!startVal || !endVal) return;
+
+            const startDate = new Date(startVal);
+            const endDate = new Date(endVal);
+
+            let csvContent = `\uFEFFHiányzási Jelentés (${startVal} - ${endVal})\n`;
+            csvContent += "Név;Nem;Csoport / Osztály;Kedvezmény;Hiányzott Napok Száma;Dátumok\n";
+
+            persons.forEach(p => {
+                const absentDates = [];
+                Object.keys(attendanceRecords).forEach(dStr => {
+                    const d = new Date(dStr);
+                    if (d >= startDate && d <= endDate && attendanceRecords[dStr][p.id] === false) {
+                        absentDates.push(dStr);
+                    }
+                });
+
+                if (absentDates.length > 0) {
+                    absentDates.sort();
+                    csvContent += `"${p.name}";"${p.gender || 'Lány'}";"${p.group}";"${p.discount || 'Teljes árú'}";"${absentDates.length}";"${absentDates.join(', ')}"\n`;
+                }
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hianyzások_${startVal}_${endVal}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Időszaki hiányzások CSV kiexportálva!');
+        }
+
+        // ==========================================
+        // OSZTÁLYONKÉNTI NEMI ÉS KEDVEZMÉNY MÁTRIX KALKULÁCIÓ
+        // ==========================================
+        function renderDetailedStatistics() {
+            const tbody = document.getElementById('detailed-stat-table-body');
+            if (!tbody) return;
+
+            const GROUPS = [
+                'Bölcsőde', 'Óvoda',
+                '1. osztály', '2. osztály', '3. osztály', '4. osztály',
+                '5. osztály', '6. osztály', '7. osztály', '8. osztály',
+                'Felnőtt'
+            ];
+
+            const DISCOUNTS = [
+                'Teljes árú',
+                '50% Nagycsaládos',
+                'RGYVK ingyenes',
+                'Nagycsaládos ingyenes',
+                'Nevelt gyermek ingyenes',
+                'Szülői bevallás ingyenes'
+            ];
+            
+            const stats = {};
+            GROUPS.forEach(g => {
+                stats[g] = {
+                    'Lány': {},
+                    'Fiú': {}
+                };
+                DISCOUNTS.forEach(d => {
+                    stats[g]['Lány'][d] = 0;
+                    stats[g]['Fiú'][d] = 0;
+                });
+            });
+
+            persons.forEach(p => {
+                if (stats[p.group] && stats[p.group][p.gender]) {
+                    const disc = p.discount || 'Teljes árú';
+                    if (stats[p.group][p.gender][disc] !== undefined) {
+                        stats[p.group][p.gender][disc]++;
+                    }
+                }
+            });
+
+            let html = '';
+
+            function renderGroupRows(groupName) {
+                const lanyData = stats[groupName]['Lány'];
+                const fiuData = stats[groupName]['Fiú'];
+
+                let lanyTotal = DISCOUNTS.reduce((sum, d) => sum + lanyData[d], 0);
+                let fiuTotal = DISCOUNTS.reduce((sum, d) => sum + fiuData[d], 0);
+                let groupTotal = lanyTotal + fiuTotal;
+
+                let rowHtml = `
+                    <tr class="hover:bg-pink-50/30">
+                        <td rowspan="3" class="py-3 px-3 font-bold text-slate-800 border-r border-slate-200 bg-slate-50/50 align-middle">${groupName}</td>
+                        <td class="py-2 px-2 text-center font-bold text-pink-600 border-r border-slate-200 bg-pink-50/50"><i class="fa-solid fa-venus"></i> Lány</td>
+                        ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center ${lanyData[d] > 0 ? 'font-bold text-slate-900' : 'text-slate-400'}">${lanyData[d]}</td>`).join('')}
+                        <td class="py-2 px-3 text-right font-bold text-pink-700 bg-pink-50/30">${lanyTotal} fő</td>
+                    </tr>
+                    <tr class="hover:bg-blue-50/30">
+                        <td class="py-2 px-2 text-center font-bold text-blue-600 border-r border-slate-200 bg-blue-50/50"><i class="fa-solid fa-mars"></i> Fiú</td>
+                        ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center ${fiuData[d] > 0 ? 'font-bold text-slate-900' : 'text-slate-400'}">${fiuData[d]}</td>`).join('')}
+                        <td class="py-2 px-3 text-right font-bold text-blue-700 bg-blue-50/30">${fiuTotal} fő</td>
+                    </tr>
+                    <tr class="bg-slate-100/80 font-bold border-b-2 border-slate-300">
+                        <td class="py-2 px-2 text-center text-slate-700 border-r border-slate-200 bg-slate-200/50">Össz.</td>
+                        ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center text-indigo-950">${lanyData[d] + fiuData[d]}</td>`).join('')}
+                        <td class="py-2 px-3 text-right text-indigo-900 font-extrabold bg-indigo-50">${groupTotal} fő</td>
+                    </tr>
+                `;
+
+                return {
+                    html: rowHtml,
+                    lanyData,
+                    fiuData,
+                    lanyTotal,
+                    fiuTotal,
+                    groupTotal
+                };
+            }
+
+            const alsoDiscounts = { 'Lány': {}, 'Fiú': {} };
+            const felsoDiscounts = { 'Lány': {}, 'Fiú': {} };
+            DISCOUNTS.forEach(d => {
+                alsoDiscounts['Lány'][d] = 0; alsoDiscounts['Fiú'][d] = 0;
+                felsoDiscounts['Lány'][d] = 0; felsoDiscounts['Fiú'][d] = 0;
+            });
+
+            GROUPS.forEach(g => {
+                const res = renderGroupRows(g);
+                html += res.html;
+
+                if (['1. osztály', '2. osztály', '3. osztály', '4. osztály'].includes(g)) {
+                    DISCOUNTS.forEach(d => {
+                        alsoDiscounts['Lány'][d] += res.lanyData[d];
+                        alsoDiscounts['Fiú'][d] += res.fiuData[d];
+                    });
+                }
+
+                if (['5. osztály', '6. osztály', '7. osztály', '8. osztály'].includes(g)) {
+                    DISCOUNTS.forEach(d => {
+                        felsoDiscounts['Lány'][d] += res.lanyData[d];
+                        felsoDiscounts['Fiú'][d] += res.fiuData[d];
+                    });
+                }
+
+                if (g === '4. osztály') {
+                    let alsoLanyTotal = DISCOUNTS.reduce((sum, d) => sum + alsoDiscounts['Lány'][d], 0);
+                    let alsoFiuTotal = DISCOUNTS.reduce((sum, d) => sum + alsoDiscounts['Fiú'][d], 0);
+
+                    html += `
+                        <tr class="bg-indigo-900 text-white font-bold border-t-4 border-indigo-950">
+                            <td rowspan="3" class="py-3 px-3 uppercase text-amber-300 align-middle border-r border-indigo-800">1–4. OSZTÁLY (ALSÓ TAGOZAT) ÖSSZESEN</td>
+                            <td class="py-2 px-2 text-center text-pink-300 border-r border-indigo-800"><i class="fa-solid fa-venus"></i> Lány</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${alsoDiscounts['Lány'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-pink-300">${alsoLanyTotal} fő</td>
+                        </tr>
+                        <tr class="bg-indigo-900 text-white font-bold">
+                            <td class="py-2 px-2 text-center text-blue-300 border-r border-indigo-800"><i class="fa-solid fa-mars"></i> Fiú</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${alsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-blue-300">${alsoFiuTotal} fő</td>
+                        </tr>
+                        <tr class="bg-indigo-950 text-amber-300 font-extrabold border-b-4 border-indigo-950">
+                            <td class="py-2 px-2 text-center border-r border-indigo-800">Mindössz.</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${alsoDiscounts['Lány'][d] + alsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-amber-300 text-base">${alsoLanyTotal + alsoFiuTotal} fő</td>
+                        </tr>
+                    `;
+                }
+
+                if (g === '8. osztály') {
+                    let felsoLanyTotal = DISCOUNTS.reduce((sum, d) => sum + felsoDiscounts['Lány'][d], 0);
+                    let felsoFiuTotal = DISCOUNTS.reduce((sum, d) => sum + felsoDiscounts['Fiú'][d], 0);
+
+                    let iskolaLanyTotal = DISCOUNTS.reduce((sum, d) => sum + alsoDiscounts['Lány'][d] + felsoDiscounts['Lány'][d], 0);
+                    let iskolaFiuTotal = DISCOUNTS.reduce((sum, d) => sum + alsoDiscounts['Fiú'][d] + felsoDiscounts['Fiú'][d], 0);
+
+                    html += `
+                        <tr class="bg-indigo-900 text-white font-bold border-t-4 border-indigo-950">
+                            <td rowspan="3" class="py-3 px-3 uppercase text-amber-300 align-middle border-r border-indigo-800">5–8. OSZTÁLY (FELSŐ TAGOZAT) ÖSSZESEN</td>
+                            <td class="py-2 px-2 text-center text-pink-300 border-r border-indigo-800"><i class="fa-solid fa-venus"></i> Lány</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${felsoDiscounts['Lány'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-pink-300">${felsoLanyTotal} fő</td>
+                        </tr>
+                        <tr class="bg-indigo-900 text-white font-bold">
+                            <td class="py-2 px-2 text-center text-blue-300 border-r border-indigo-800"><i class="fa-solid fa-mars"></i> Fiú</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${felsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-blue-300">${felsoFiuTotal} fő</td>
+                        </tr>
+                        <tr class="bg-indigo-950 text-amber-300 font-extrabold border-b-4 border-indigo-950">
+                            <td class="py-2 px-2 text-center border-r border-indigo-800">Mindössz.</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${felsoDiscounts['Lány'][d] + felsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-amber-300 text-base">${felsoLanyTotal + felsoFiuTotal} fő</td>
+                        </tr>
+
+                        <tr class="bg-slate-900 text-amber-400 font-extrabold border-t-4 border-slate-950">
+                            <td rowspan="3" class="py-3 px-3 uppercase text-amber-300 align-middle border-r border-slate-800">1–8. OSZTÁLY (ISKOLA EGYÜTT) MINDÖSSZESEN</td>
+                            <td class="py-2 px-2 text-center text-pink-300 border-r border-slate-800"><i class="fa-solid fa-venus"></i> Lány</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${alsoDiscounts['Lány'][d] + felsoDiscounts['Lány'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-pink-300">${iskolaLanyTotal} fő</td>
+                        </tr>
+                        <tr class="bg-slate-900 text-amber-400 font-extrabold">
+                            <td class="py-2 px-2 text-center text-blue-300 border-r border-slate-800"><i class="fa-solid fa-mars"></i> Fiú</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center">${alsoDiscounts['Fiú'][d] + felsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-blue-300">${iskolaFiuTotal} fő</td>
+                        </tr>
+                        <tr class="bg-slate-950 text-amber-300 font-black text-sm">
+                            <td class="py-2 px-2 text-center border-r border-slate-800">MINDÖSSZ.</td>
+                            ${DISCOUNTS.map(d => `<td class="py-2 px-2 text-center text-white">${alsoDiscounts['Lány'][d] + felsoDiscounts['Lány'][d] + alsoDiscounts['Fiú'][d] + felsoDiscounts['Fiú'][d]}</td>`).join('')}
+                            <td class="py-2 px-3 text-right text-amber-300 text-lg">${iskolaLanyTotal + iskolaFiuTotal} fő</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
